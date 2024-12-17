@@ -61,7 +61,7 @@ M.move_cb = function ()
 end
 
 function M.get_hi_group(ansi)
-  return vim.fn.matchstr(ansi, "\\d\\zem")
+  return vim.fn.matchstr(ansi, "[0-9;]\\+\\zem")
 end
 
 M.highlight_visible = function (buf, line_start, line_end)
@@ -74,10 +74,11 @@ M.highlight_visible = function (buf, line_start, line_end)
     local _, hi_list = M.highlight_line(l)
     for _, v in ipairs(hi_list) do
       local prefix, col_s, col_e = v[1], v[2], v[3]
-      if prefix == "7" then
-        -- col + 1 due to delta not having the + indicator
-        vim.highlight.range(buf, hi_ns, hi_group, {i - 1, col_s + 1}, {i - 1, col_e + 1}, hi_opts)
-        -- vim.print(prefix.." "..col_s.." "..col_e)
+      if prefix == "7" or M.startswith(prefix, "7;") then
+        if col_s ~= col_e then
+          -- col + 1 due to delta not having the + indicator
+          vim.highlight.range(buf, hi_ns, hi_group, {i - 1, col_s + 1}, {i - 1, col_e + 1}, hi_opts)
+        end
       end
     end
     ::continue::
@@ -118,6 +119,9 @@ function M.highlight_line(l)
   return l, hi_list
 end
 
+function M.startswith(String,Start)
+  return string.sub(String,1,string.len(Start))==Start
+end
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "git,diff",
