@@ -45,7 +45,8 @@ M.move_cb = function ()
   local max_line = vim.fn.line("$")
 
   line_start = line_start < 1 and 1 or line_start
-  line_end = line_end > max_line and max_line or line_end
+  -- add +1 to line end due to w$ not getting the overflow line.
+  line_end = line_end + 1 > max_line and max_line or line_end + 1
 
   if line_end - line_start < 1 then
     return
