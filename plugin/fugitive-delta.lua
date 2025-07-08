@@ -7,6 +7,7 @@ if vim.fn.executable("delta") ~= 1 then
   return
 end
 local M = {}
+M.fugitive_delta_lines = {}
 
 local fugitive_delta_group = vim.api.nvim_create_augroup("fugitive_delta_group", { clear = true })
 local hi_ns = vim.api.nvim_create_namespace("fdhi")
@@ -16,15 +17,22 @@ local hi_opts = {
 local hi_group = "FugitiveDeltaText"
 vim.api.nvim_command("highlight link FugitiveDeltaText DiffText")
 
+vim.api.nvim_create_autocmd("BufWipeout", {
+  callback = function(args)
+    M.fugitive_delta_lines[args.buf] = nil
+  end,
+  group = fugitive_delta_group,
+})
+
 M.filetype_cb = function ()
   -- initial setup
   if vim.b.fugitive_delta ~= nil then
     return
   end
   vim.b.fugitive_delta = 1
-  vim.b.fugitive_delta_lines = {}
 
   local buf = vim.fn.bufnr("%")
+  M.fugitive_delta_lines[buf] = {}
   local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
@@ -74,11 +82,10 @@ end
 
 M.highlight_visible = function (buf, line_start, line_end)
   for i = line_start, line_end do
-    if vim.b.fugitive_delta_lines[i] then
+    if M.fugitive_delta_lines[buf][i] then
       goto continue
     end
-    -- TODO: this is wrong as this is proxy only need to assign to local var to convert to lua table.
-    vim.b.fugitive_delta_lines[i] = true
+    M.fugitive_delta_lines[buf][i] = true
     local l = vim.b.fugitive_delta_output[i]
     local _, hi_list = M.highlight_line(l)
     for _, v in ipairs(hi_list) do
@@ -170,8 +177,8 @@ vim.api.nvim_create_autocmd("User", {
 })
 
 M.summary_updated_cb = function ()
-  vim.b.fugitive_delta_lines = {}
   local buf = vim.fn.bufnr("%")
+  M.fugitive_delta_lines[buf] = {}
   local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
