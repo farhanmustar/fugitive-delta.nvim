@@ -37,6 +37,13 @@ M.filetype_cb = function ()
     callback = M.move_cb,
     group = fugitive_delta_buf_group,
   })
+  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
+    buffer = buf,
+    callback = function()
+      vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_buf_group })
+    end,
+    group = fugitive_delta_buf_group,
+  })
 end
 
 M.move_cb = function ()
@@ -70,6 +77,7 @@ M.highlight_visible = function (buf, line_start, line_end)
     if vim.b.fugitive_delta_lines[i] then
       goto continue
     end
+    -- TODO: this is wrong as this is proxy only need to assign to local var to convert to lua table.
     vim.b.fugitive_delta_lines[i] = true
     local l = vim.b.fugitive_delta_output[i]
     local _, hi_list = M.highlight_line(l)
@@ -129,3 +137,60 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = M.filetype_cb,
   group = fugitive_delta_group,
 })
+
+-- fugitive summary buffer modification
+M.summary_cb = function ()
+  if vim.b.fugitive_delta ~= nil then
+    return
+  end
+  vim.b.fugitive_delta = 1
+  local buf = vim.fn.bufnr("%")
+  local fugitive_delta_summary_buf_group =
+    vim.api.nvim_create_augroup("fugitive_delta_summary_buf_group", { clear = false })
+  vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_buf_group })
+  vim.api.nvim_create_autocmd("TextChanged", {
+    buffer = buf,
+    callback = M.summary_updated_cb,
+    group = fugitive_delta_summary_buf_group,
+  })
+  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
+    buffer = buf,
+    callback = function()
+      vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_buf_group })
+    end,
+    group = fugitive_delta_summary_buf_group,
+  })
+  M.summary_updated_cb()
+end
+
+vim.api.nvim_create_autocmd("User", {
+  pattern = "FugitiveIndex",
+  callback = M.summary_cb,
+  group = fugitive_delta_group,
+})
+
+M.summary_updated_cb = function ()
+  vim.b.fugitive_delta_lines = {}
+  local buf = vim.fn.bufnr("%")
+  local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
+  vim.b.fugitive_delta_output = output_lines
+  -- TODO: handle command error out.
+
+  vim.api.nvim_buf_clear_namespace(buf, hi_ns, 0, -1)
+  local fugitive_delta_summary_move_group =
+    vim.api.nvim_create_augroup("fugitive_delta_summary_move_group", { clear = false })
+  vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_move_group })
+  M.move_cb()
+  vim.api.nvim_create_autocmd("CursorMoved", {
+    buffer = buf,
+    callback = M.move_cb,
+    group = fugitive_delta_summary_move_group,
+  })
+  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
+    buffer = buf,
+    callback = function()
+      vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_move_group })
+    end,
+    group = fugitive_delta_summary_move_group,
+  })
+end
