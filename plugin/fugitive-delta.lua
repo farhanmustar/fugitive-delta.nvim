@@ -140,7 +140,7 @@ function M.startswith(String,Start)
 end
 
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = "git,diff",
+  pattern = "git,gvgit,diff",
   callback = M.filetype_cb,
   group = fugitive_delta_group,
 })
