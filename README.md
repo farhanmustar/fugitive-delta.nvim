@@ -26,6 +26,6 @@
 ```vim
 highlight link FugitiveDeltaText DiffText
 ```
-* Demo below showing 'filetype' is highlighted using `FugitiveDeltaText` highlight group.
+* Demo below showing 'changed' is highlighted using `FugitiveDeltaText` highlight group.
 
-<img src="https://github.com/farhanmustar/fugitive-delta.nvim/wiki/git.png" alt="Fugitive Delta Demo" />
+[![Fugitive Delta Demo](https://github.com/farhanmustar/fugitive-delta.nvim/wiki/youtube.png)](https://www.youtube.com/watch?v=bLg0WqNUX5Y "Fugitive Delta Demo")
