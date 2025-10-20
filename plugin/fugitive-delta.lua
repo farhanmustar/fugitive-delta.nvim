@@ -36,22 +36,7 @@ M.filetype_cb = function ()
   local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
-
-  local fugitive_delta_buf_group = vim.api.nvim_create_augroup("fugitive_delta_buf_group", { clear = false })
-  vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_buf_group })
   M.move_cb()
-  vim.api.nvim_create_autocmd("CursorMoved", {
-    buffer = buf,
-    callback = M.move_cb,
-    group = fugitive_delta_buf_group,
-  })
-  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
-    buffer = buf,
-    callback = function()
-      vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_buf_group })
-    end,
-    group = fugitive_delta_buf_group,
-  })
 end
 
 M.move_cb = function ()
@@ -184,22 +169,14 @@ M.summary_updated_cb = function ()
   local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
-
-  vim.api.nvim_buf_clear_namespace(buf, hi_ns, 0, -1)
-  local fugitive_delta_summary_move_group =
-    vim.api.nvim_create_augroup("fugitive_delta_summary_move_group", { clear = false })
-  vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_move_group })
   M.move_cb()
-  vim.api.nvim_create_autocmd("CursorMoved", {
-    buffer = buf,
-    callback = M.move_cb,
-    group = fugitive_delta_summary_move_group,
-  })
-  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
-    buffer = buf,
-    callback = function()
-      vim.api.nvim_clear_autocmds({ buffer = buf, group = fugitive_delta_summary_move_group })
-    end,
-    group = fugitive_delta_summary_move_group,
-  })
 end
+
+vim.api.nvim_create_autocmd("WinScrolled", {
+  group = fugitive_delta_group,
+  callback = function()
+    if vim.b.fugitive_delta ~= nil then
+      M.move_cb()
+    end
+  end
+})
