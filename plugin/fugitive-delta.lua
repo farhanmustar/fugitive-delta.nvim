@@ -33,7 +33,7 @@ M.filetype_cb = function ()
 
   local buf = vim.fn.bufnr("%")
   M.fugitive_delta_lines[buf] = {}
-  local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
+  local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
   M.move_cb()
