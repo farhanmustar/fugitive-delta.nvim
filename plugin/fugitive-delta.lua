@@ -166,7 +166,7 @@ M.summary_updated_cb = function ()
   M.fugitive_delta_lines[buf] = {}
   vim.b.fugitive_delta_start = nil
   vim.b.fugitive_delta_end = nil
-  local output_lines = vim.fn.systemlist({"delta", "--paging=never", "--diff-highlight"}, buf)
+  local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
   M.move_cb()
