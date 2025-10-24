@@ -36,7 +36,6 @@ M.filetype_cb = function ()
   local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
   vim.b.fugitive_delta_output = output_lines
   -- TODO: handle command error out.
-  M.move_cb()
 end
 
 M.move_cb = function ()
@@ -172,7 +171,7 @@ M.summary_updated_cb = function ()
   M.move_cb()
 end
 
-vim.api.nvim_create_autocmd("WinScrolled", {
+vim.api.nvim_create_autocmd({"BufWinEnter", "WinScrolled"}, {
   group = fugitive_delta_group,
   callback = function()
     if vim.b.fugitive_delta ~= nil then
