@@ -3,7 +3,16 @@ if vim.fn.exists("g:loaded_fugitive_delta") ~= 0 then
 end
 vim.g.loaded_fugitive_delta = 1
 
-if vim.fn.executable("delta") ~= 1 then
+local DELTA_EXE = 1
+local DIFF_HI_EXE = 2
+vim.g.exe_fugitive_delta = 0
+if vim.fn.executable("delta") == 1 then
+  vim.g.exe_fugitive_delta = DELTA_EXE
+elseif vim.fn.executable("diff-highlight") == 1 then
+  vim.g.exe_fugitive_delta = DIFF_HI_EXE
+end
+
+if vim.g.loaded_fugitive_delta == 0 then
   return
 end
 local M = {}
@@ -24,6 +33,20 @@ vim.api.nvim_create_autocmd("BufWipeout", {
   group = fugitive_delta_group,
 })
 
+M.get_highlight = function (buf)
+  if vim.g.exe_fugitive_delta == DELTA_EXE then
+    -- TODO: handle command error out if any ?
+    local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
+    -- offset +1 due to delta not having the + indicator
+    local offset = 1
+    return output_lines, offset
+  else -- using DIFF_HI_EXE
+    local output_lines = vim.fn.systemlist({"diff-highlight"}, buf)
+    local offset = 0
+    return output_lines, offset
+  end
+end
+
 M.filetype_cb = function ()
   -- initial setup
   if vim.b.fugitive_delta ~= nil then
@@ -33,9 +56,9 @@ M.filetype_cb = function ()
 
   local buf = vim.fn.bufnr("%")
   M.fugitive_delta_lines[buf] = {}
-  local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
+  local output_lines, offset = M.get_highlight(buf)
   vim.b.fugitive_delta_output = output_lines
-  -- TODO: handle command error out.
+  vim.b.fugitive_delta_output_offset = offset
 end
 
 M.move_cb = function ()
@@ -76,8 +99,8 @@ M.highlight_visible = function (buf, line_start, line_end)
       local prefix, col_s, col_e = v[1], v[2], v[3]
       if prefix == "7" or M.startswith(prefix, "7;") then
         if col_s ~= col_e then
-          -- col + 1 due to delta not having the + indicator
-          vim.highlight.range(buf, hi_ns, hi_group, {i - 1, col_s + 1}, {i - 1, col_e + 1}, hi_opts)
+          local offset = vim.b.fugitive_delta_output_offset
+          vim.highlight.range(buf, hi_ns, hi_group, {i - 1, col_s + offset}, {i - 1, col_e + offset}, hi_opts)
         end
       end
     end
@@ -165,9 +188,9 @@ M.summary_updated_cb = function ()
   M.fugitive_delta_lines[buf] = {}
   vim.b.fugitive_delta_start = nil
   vim.b.fugitive_delta_end = nil
-  local output_lines = vim.fn.systemlist({"delta", "--no-gitconfig", "--paging=never", "--diff-highlight"}, buf)
+  local output_lines, offset = M.get_highlight(buf)
   vim.b.fugitive_delta_output = output_lines
-  -- TODO: handle command error out.
+  vim.b.fugitive_delta_output_offset = offset
   M.move_cb()
 end
 
