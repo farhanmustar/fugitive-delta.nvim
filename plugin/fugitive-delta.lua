@@ -12,7 +12,7 @@ elseif vim.fn.executable("diff-highlight") == 1 then
   vim.g.exe_fugitive_delta = DIFF_HI_EXE
 end
 
-if vim.g.loaded_fugitive_delta == 0 then
+if vim.g.exe_fugitive_delta == 0 then
   return
 end
 local M = {}
